@@ -86,8 +86,16 @@
       "typingReaction": "hourglass_flowing_sand",
       "ackReaction": "eyes",
       "streaming": {
-        "mode": "progress",
-        "nativeTransport": false
+        "mode": "partial",
+        "nativeTransport": true,
+        "preview": {
+          "toolProgress": true,
+          "commandText": "status"
+        },
+        "progress": {
+          "toolProgress": true,
+          "commandText": "status"
+        }
       },
       "mediaMaxMb": 20,
       "textChunkLimit": 4000,

@@ -41,7 +41,15 @@ properties:
             sync_state() {
               while true; do
                 sleep 60
+                if [ -f /mnt/openclaw-state/openclaw.json ]; then
+                  cp /mnt/openclaw-state/openclaw.json /tmp/openclaw-mounted-config.json 2>/dev/null || true
+                else
+                  rm -f /tmp/openclaw-mounted-config.json
+                fi
                 cp -aL /root/.openclaw/. /mnt/openclaw-state/ 2>/dev/null || true
+                if [ -f /tmp/openclaw-mounted-config.json ]; then
+                  cp /tmp/openclaw-mounted-config.json /mnt/openclaw-state/openclaw.json 2>/dev/null || true
+                fi
               done
             }
 
@@ -50,7 +58,7 @@ properties:
             openclaw gateway --port 18789 --verbose &
             gateway_pid="$!"
 
-            trap 'kill "$sync_pid" 2>/dev/null || true; cp -aL /root/.openclaw/. /mnt/openclaw-state/ 2>/dev/null || true; kill "$gateway_pid" 2>/dev/null || true' TERM INT EXIT
+            trap 'kill "$sync_pid" 2>/dev/null || true; if [ -f /mnt/openclaw-state/openclaw.json ]; then cp /mnt/openclaw-state/openclaw.json /tmp/openclaw-mounted-config.json 2>/dev/null || true; fi; cp -aL /root/.openclaw/. /mnt/openclaw-state/ 2>/dev/null || true; if [ -f /tmp/openclaw-mounted-config.json ]; then cp /tmp/openclaw-mounted-config.json /mnt/openclaw-state/openclaw.json 2>/dev/null || true; fi; kill "$gateway_pid" 2>/dev/null || true' TERM INT EXIT
             wait "$gateway_pid"
         env:
           - name: OPENCLAW_CONFIG_PATH

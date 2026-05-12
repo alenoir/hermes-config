@@ -155,6 +155,13 @@ for old_path in config.yaml SOUL.md google_client_secret.json google_token.json;
     --output none 2>/dev/null || true
 done
 
+az storage file delete \
+  --account-name "$STORAGE_ACCOUNT" \
+  --account-key "$storage_key" \
+  --share-name "$FILE_SHARE" \
+  --path openclaw.json \
+  --output none 2>/dev/null || true
+
 az storage file upload \
   --account-name "$STORAGE_ACCOUNT" \
   --account-key "$storage_key" \
