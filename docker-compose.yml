@@ -1,0 +1,16 @@
+services:
+  hermes:
+    image: hermes-agent-local
+    build:
+      context: .build/hermes-agent
+    container_name: hermes
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      HERMES_HOME: /opt/data
+      HERMES_UID: ${HERMES_UID:-10000}
+      HERMES_GID: ${HERMES_GID:-10000}
+    volumes:
+      - ./data:/opt/data
+    command: ["gateway", "run", "--accept-hooks"]
