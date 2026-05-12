@@ -1,0 +1,235 @@
+{
+  "agents": {
+    "defaults": {
+      "workspace": "/root/.openclaw/workspace",
+      "userTimezone": "Europe/Paris",
+      "model": {
+        "primary": "openai/gpt-5.5",
+        "fallbacks": [
+          "openai/gpt-5.4",
+          "openai/gpt-5.4-mini"
+        ]
+      },
+      "models": {
+        "openai/gpt-5.5": {
+          "alias": "gpt-pro"
+        },
+        "openai/gpt-5.4": {
+          "alias": "gpt"
+        },
+        "openai/gpt-5.4-mini": {
+          "alias": "gpt-mini"
+        }
+      },
+      "embeddedHarness": {
+        "runtime": "auto"
+      },
+      "thinkingDefault": "low",
+      "verboseDefault": "off",
+      "elevatedDefault": "on",
+      "timeoutSeconds": 900,
+      "maxConcurrent": 2,
+      "imageMaxDimensionPx": 1200,
+      "sandbox": {
+        "mode": "off"
+      },
+      "systemPromptOverride": "You are Antoine's private OpenClaw assistant in Slack. Be direct, practical, and concise. Use the fast/default reasoning path for simple answers. For engineering, infra, debugging, research, long tool workflows, or ambiguous high-impact tasks, increase reasoning automatically and use available tools. You are allowed to work with files, shell commands, sessions, memory, and Slack tools for Antoine. Avoid autonomous PRs, background automation, and destructive actions unless Antoine explicitly asks."
+    },
+    "list": [
+      {
+        "id": "main",
+        "identity": {
+          "name": "Dwight Schrute",
+          "emoji": "eyes"
+        },
+        "groupChat": {
+          "mentionPatterns": [
+            "@Dwight Schrute",
+            "Dwight",
+            "dwight"
+          ]
+        }
+      }
+    ]
+  },
+  "channels": {
+    "defaults": {
+      "groupPolicy": "open",
+      "contextVisibility": "allowlist"
+    },
+    "slack": {
+      "enabled": true,
+      "mode": "socket",
+      "dmPolicy": "allowlist",
+      "allowFrom": [
+        "U06JF46Q57F"
+      ],
+      "groupPolicy": "open",
+      "allowBots": false,
+      "historyLimit": 50,
+      "dmHistoryLimit": 50,
+      "replyToMode": "first",
+      "thread": {
+        "historyScope": "thread",
+        "inheritParent": true
+      },
+      "actions": {
+        "reactions": true,
+        "messages": true,
+        "pins": true,
+        "memberInfo": true,
+        "emojiList": true
+      },
+      "slashCommand": {
+        "enabled": true,
+        "name": "openclaw",
+        "sessionPrefix": "slack:slash",
+        "ephemeral": true
+      },
+      "typingReaction": "hourglass_flowing_sand",
+      "ackReaction": "eyes",
+      "streaming": {
+        "mode": "progress",
+        "nativeTransport": false
+      },
+      "mediaMaxMb": 20,
+      "textChunkLimit": 4000,
+      "execApprovals": {
+        "enabled": true,
+        "approvers": [
+          "U06JF46Q57F"
+        ],
+        "agentFilter": [
+          "main"
+        ],
+        "sessionFilter": [
+          "slack:"
+        ],
+        "target": "dm"
+      }
+    }
+  },
+  "session": {
+    "scope": "per-sender",
+    "dmScope": "main",
+    "threadBindings": {
+      "enabled": true,
+      "idleHours": 24,
+      "maxAgeHours": 0
+    },
+    "maintenance": {
+      "mode": "warn",
+      "pruneAfter": "30d",
+      "rotateBytes": "10mb",
+      "maxDiskBytes": "1gb",
+      "highWaterBytes": "800mb"
+    }
+  },
+  "commands": {
+    "native": "auto",
+    "text": true,
+    "bash": true,
+    "config": false,
+    "mcp": true,
+    "plugins": true,
+    "debug": true,
+    "restart": true,
+    "ownerAllowFrom": [
+      "slack:U06JF46Q57F"
+    ],
+    "allowFrom": {
+      "slack": [
+        "U06JF46Q57F"
+      ]
+    }
+  },
+  "messages": {
+    "responsePrefix": "",
+    "ackReaction": "eyes",
+    "ackReactionScope": "all",
+    "removeAckAfterReply": true,
+    "queue": {
+      "mode": "interrupt",
+      "debounceMs": 500,
+      "cap": 20,
+      "drop": "summarize"
+    },
+    "inbound": {
+      "debounceMs": 500,
+      "byChannel": {
+        "slack": 500
+      }
+    }
+  },
+  "tools": {
+    "profile": "full",
+    "allow": [
+      "group:openclaw",
+      "group:runtime",
+      "group:fs",
+      "group:web",
+      "group:sessions",
+      "group:memory",
+      "group:messaging",
+      "group:automation"
+    ],
+    "elevated": {
+      "enabled": true,
+      "allowFrom": {
+        "slack": [
+          "U06JF46Q57F"
+        ]
+      }
+    },
+    "exec": {
+      "backgroundMs": 10000,
+      "timeoutSec": 1800,
+      "cleanupMs": 1800000,
+      "notifyOnExit": true,
+      "notifyOnExitEmptySuccess": false,
+      "applyPatch": {
+        "enabled": true,
+        "allowModels": [
+          "gpt-5.5",
+          "gpt-5.4",
+          "openai/gpt-5.5",
+          "openai/gpt-5.4"
+        ]
+      }
+    },
+    "loopDetection": {
+      "enabled": true,
+      "historySize": 30,
+      "warningThreshold": 10,
+      "criticalThreshold": 20,
+      "globalCircuitBreakerThreshold": 30
+    },
+    "web": {
+      "fetch": {
+        "enabled": true,
+        "maxChars": 50000,
+        "maxResponseBytes": 2000000,
+        "timeoutSeconds": 30,
+        "readability": true
+      }
+    },
+    "sessions": {
+      "visibility": "all"
+    },
+    "experimental": {
+      "planTool": true
+    }
+  },
+  "gateway": {
+    "mode": "local",
+    "bind": "lan",
+    "reload": {
+      "mode": "hybrid",
+      "debounceMs": 500,
+      "deferralTimeoutMs": 300000
+    }
+  },
+  "logging": {
+    "level": "debug"
+  }
+}

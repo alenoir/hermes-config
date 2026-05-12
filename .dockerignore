@@ -1,17 +1,18 @@
+.git
+.gitignore
 .env
 .env.*
 !.env.example
 
 data/
-.build/
 .azure-tmp/
 .secrets/
+.openclaw-*/
 client_secret_*.json
 google_client_secret.json
 google_token.json
 
 node_modules/
 .npm/
-.openclaw-*/
 *.log
 .DS_Store

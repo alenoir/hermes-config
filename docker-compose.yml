@@ -1,16 +1,19 @@
 services:
-  hermes:
-    image: hermes-agent-local
+  openclaw:
+    image: openclaw-agent-local
     build:
-      context: .build/hermes-agent
-    container_name: hermes
+      context: .
+      args:
+        OPENCLAW_VERSION: ${OPENCLAW_VERSION:-2026.5.7}
+    container_name: openclaw
     restart: unless-stopped
     env_file:
       - .env
     environment:
-      HERMES_HOME: /opt/data
-      HERMES_UID: ${HERMES_UID:-10000}
-      HERMES_GID: ${HERMES_GID:-10000}
+      OPENCLAW_CONFIG_PATH: /root/.openclaw/openclaw.json
+      OPENCLAW_STATE_DIR: /root/.openclaw
     volumes:
-      - ./data:/opt/data
-    command: ["gateway", "run", "--accept-hooks"]
+      - ./data:/root/.openclaw
+    ports:
+      - "18789:18789"
+    command: ["openclaw", "gateway", "--port", "18789", "--verbose"]

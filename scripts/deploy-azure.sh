@@ -22,15 +22,15 @@ RESOURCE_GROUP="${RESOURCE_GROUP:-rg-Urbanquest}"
 LOCATION="${LOCATION:-swedencentral}"
 CONTAINERAPP_ENV="${CONTAINERAPP_ENV:-hermes-env}"
 CONTAINERAPP_NAME="${CONTAINERAPP_NAME:-hermes-agent}"
-HERMES_IMAGE_TAG="${HERMES_IMAGE_TAG:-latest}"
-HERMES_MODEL="${HERMES_MODEL:-gpt-5.4-mini}"
-HERMES_TAIL_FILE_LOGS="${HERMES_TAIL_FILE_LOGS:-true}"
+OPENCLAW_IMAGE_TAG="${OPENCLAW_IMAGE_TAG:-latest}"
+OPENCLAW_VERSION="${OPENCLAW_VERSION:-2026.5.7}"
+OPENCLAW_GATEWAY_TOKEN="${OPENCLAW_GATEWAY_TOKEN:-}"
+OPENCLAW_UPLOAD_LOCAL_STATE="${OPENCLAW_UPLOAD_LOCAL_STATE:-false}"
 ACR_PULL_IDENTITY="${ACR_PULL_IDENTITY:-hermes-acr-pull}"
-SLACK_HOME_CHANNEL="${SLACK_HOME_CHANNEL:-}"
-SLACK_HOME_CHANNEL_NAME="${SLACK_HOME_CHANNEL_NAME:-}"
-AZURE_AI_RESOURCE_GROUP="${AZURE_AI_RESOURCE_GROUP:-$RESOURCE_GROUP}"
-AZURE_AI_RESOURCE_NAME="${AZURE_AI_RESOURCE_NAME:-urbanquest-resource}"
-COMPOSIO_API_KEY="${COMPOSIO_API_KEY:-}"
+
+if [[ -z "$OPENCLAW_GATEWAY_TOKEN" ]]; then
+  OPENCLAW_GATEWAY_TOKEN="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 48)"
+fi
 
 require ACR_NAME
 require STORAGE_ACCOUNT
@@ -38,15 +38,6 @@ require FILE_SHARE
 require SLACK_BOT_TOKEN
 require SLACK_APP_TOKEN
 require SLACK_ALLOWED_USERS
-
-encode_secret_file() {
-  local path="$1"
-  if [[ -n "$path" && -f "$path" ]]; then
-    base64 < "$path" | tr -d '\n'
-  else
-    printf '%s' "-"
-  fi
-}
 
 if ! command -v az >/dev/null 2>&1; then
   echo "Azure CLI is required." >&2
@@ -56,27 +47,6 @@ fi
 if ! command -v envsubst >/dev/null 2>&1; then
   echo "envsubst is required. On macOS: brew install gettext && brew link --force gettext" >&2
   exit 1
-fi
-
-if [[ -z "${AZURE_FOUNDRY_BASE_URL:-}" ]]; then
-  azure_ai_endpoint="$(
-    az cognitiveservices account show \
-      --resource-group "$AZURE_AI_RESOURCE_GROUP" \
-      --name "$AZURE_AI_RESOURCE_NAME" \
-      --query properties.endpoint \
-      --output tsv
-  )"
-  AZURE_FOUNDRY_BASE_URL="${azure_ai_endpoint%/}/openai/v1"
-fi
-
-if [[ -z "${AZURE_FOUNDRY_API_KEY:-}" ]]; then
-  AZURE_FOUNDRY_API_KEY="$(
-    az cognitiveservices account keys list \
-      --resource-group "$AZURE_AI_RESOURCE_GROUP" \
-      --name "$AZURE_AI_RESOURCE_NAME" \
-      --query key1 \
-      --output tsv
-  )"
 fi
 
 az group create \
@@ -125,42 +95,12 @@ az role assignment create \
   --scope "$acr_id" \
   --output none || true
 
-hermes_source_dir="$repo_root/.build/hermes-agent"
-hermes_build_dir="$repo_root/.azure-tmp/hermes-agent-build"
-
-if [[ "${HERMES_SKIP_IMAGE_BUILD:-false}" != "true" ]]; then
-  if [[ ! -d "$hermes_source_dir/.git" ]]; then
-    mkdir -p "$(dirname "$hermes_source_dir")"
-    git clone https://github.com/NousResearch/hermes-agent.git "$hermes_source_dir"
-  fi
-
-  mkdir -p "$hermes_build_dir"
-  rsync -a --delete \
-    --exclude .git \
-    --exclude node_modules \
-    --exclude web/node_modules \
-    --exclude ui-tui/node_modules \
-    "$hermes_source_dir/" "$hermes_build_dir/"
-
-  # ACR Build still rejects Dockerfile frontend COPY --chmod in some regions.
-  # Preserve the same runtime permissions with a classic-Docker-compatible RUN.
-  perl -0pi -e 's/COPY --chmod=0755 --from=/COPY --from=/g' "$hermes_build_dir/Dockerfile"
-
-  # Avoid Docker Hub anonymous pull limits in ACR Build:
-  # - use an MCR Debian 13 base instead of docker.io/library/debian
-  # - install gosu from apt instead of pulling docker.io/tianon/gosu
-  perl -0pi -e 's|FROM tianon/gosu:[^\n]+ AS gosu_source|FROM scratch AS gosu_source|' "$hermes_build_dir/Dockerfile"
-  perl -0pi -e 's|FROM debian:13\.4|FROM mcr.microsoft.com/devcontainers/base:debian-13|' "$hermes_build_dir/Dockerfile"
-  perl -0pi -e 's|build-essential curl nodejs|build-essential curl gosu nodejs|' "$hermes_build_dir/Dockerfile"
-  perl -0pi -e 's|COPY --from=gosu_source /gosu /usr/local/bin/\n||' "$hermes_build_dir/Dockerfile"
-  perl -0pi -e 's|(COPY --from=uv_source /usr/local/bin/uv /usr/local/bin/uvx /usr/local/bin/\n)|$1RUN ln -sf /usr/sbin/gosu /usr/local/bin/gosu \&\& chmod 0755 /usr/sbin/gosu /usr/local/bin/uv /usr/local/bin/uvx\n|' "$hermes_build_dir/Dockerfile"
-
+if [[ "${OPENCLAW_SKIP_IMAGE_BUILD:-false}" != "true" ]]; then
   az acr build \
     --registry "$ACR_NAME" \
-    --image "hermes-agent:$HERMES_IMAGE_TAG" \
-    "$hermes_build_dir"
-
-  rm -rf "$hermes_build_dir"
+    --image "openclaw-agent:$OPENCLAW_IMAGE_TAG" \
+    --build-arg "OPENCLAW_VERSION=$OPENCLAW_VERSION" \
+    "$repo_root"
 fi
 
 if ! az containerapp env show --resource-group "$RESOURCE_GROUP" --name "$CONTAINERAPP_ENV" >/dev/null 2>&1; then
@@ -199,42 +139,38 @@ az storage share-rm create \
 az containerapp env storage set \
   --resource-group "$RESOURCE_GROUP" \
   --name "$CONTAINERAPP_ENV" \
-  --storage-name hermes-home \
+  --storage-name openclaw-home \
   --access-mode ReadWrite \
   --azure-file-account-name "$STORAGE_ACCOUNT" \
   --azure-file-account-key "$storage_key" \
   --azure-file-share-name "$FILE_SHARE" \
   --output none
 
-az storage file delete \
-  --account-name "$STORAGE_ACCOUNT" \
-  --account-key "$storage_key" \
-  --share-name "$FILE_SHARE" \
-  --path config.yaml \
-  --output none 2>/dev/null || true
+for old_path in config.yaml SOUL.md google_client_secret.json google_token.json; do
+  az storage file delete \
+    --account-name "$STORAGE_ACCOUNT" \
+    --account-key "$storage_key" \
+    --share-name "$FILE_SHARE" \
+    --path "$old_path" \
+    --output none 2>/dev/null || true
+done
 
 az storage file upload \
   --account-name "$STORAGE_ACCOUNT" \
   --account-key "$storage_key" \
   --share-name "$FILE_SHARE" \
-  --source "$repo_root/config/config.yaml" \
-  --path config.yaml \
+  --source "$repo_root/config/openclaw.json" \
+  --path openclaw.json \
   --output none
 
-az storage file delete \
-  --account-name "$STORAGE_ACCOUNT" \
-  --account-key "$storage_key" \
-  --share-name "$FILE_SHARE" \
-  --path SOUL.md \
-  --output none 2>/dev/null || true
-
-az storage file upload \
-  --account-name "$STORAGE_ACCOUNT" \
-  --account-key "$storage_key" \
-  --share-name "$FILE_SHARE" \
-  --source "$repo_root/config/SOUL.md" \
-  --path SOUL.md \
-  --output none
+if [[ "$OPENCLAW_UPLOAD_LOCAL_STATE" == "true" && -d "$repo_root/data" ]]; then
+  az storage file upload-batch \
+    --account-name "$STORAGE_ACCOUNT" \
+    --account-key "$storage_key" \
+    --destination "$FILE_SHARE" \
+    --source "$repo_root/data" \
+    --output none
+fi
 
 ACR_LOGIN_SERVER="$(az acr show --name "$ACR_NAME" --query loginServer --output tsv)"
 CONTAINERAPP_ENV_ID="$(
@@ -245,29 +181,22 @@ CONTAINERAPP_ENV_ID="$(
     --output tsv
 )"
 
+OPENCLAW_CONFIG_DIGEST="$(
+  {
+    shasum -a 256 "$repo_root/config/openclaw.json"
+    printf '%s' "$SLACK_ALLOWED_USERS" | shasum -a 256
+  } | shasum -a 256 | awk '{print $1}'
+)"
+
 tmp_dir="$repo_root/.azure-tmp"
 mkdir -p "$tmp_dir"
 tmp_yaml="$tmp_dir/containerapp.yaml"
-GOOGLE_CLIENT_SECRET_B64="$(
-  encode_secret_file "${GOOGLE_CLIENT_SECRET_FILE:-$repo_root/.secrets/google-workspace/google_client_secret.json}"
-)"
-GOOGLE_TOKEN_B64="$(
-  encode_secret_file "${GOOGLE_TOKEN_FILE:-$repo_root/.secrets/google-workspace/google_token.json}"
-)"
-HERMES_CONFIG_DIGEST="$(
-  {
-    shasum -a 256 "$repo_root/config/config.yaml" "$repo_root/config/SOUL.md"
-    printf '%s' "$GOOGLE_CLIENT_SECRET_B64" | shasum -a 256
-    printf '%s' "$GOOGLE_TOKEN_B64" | shasum -a 256
-  } | shasum -a 256 | awk '{print $1}'
-)"
-export ACR_LOGIN_SERVER ACR_PULL_ID CONTAINERAPP_ENV_ID HERMES_IMAGE_TAG HERMES_MODEL HERMES_TAIL_FILE_LOGS HERMES_CONFIG_DIGEST
-export AZURE_FOUNDRY_API_KEY AZURE_FOUNDRY_BASE_URL
+
+export ACR_LOGIN_SERVER ACR_PULL_ID CONTAINERAPP_ENV_ID
+export OPENCLAW_IMAGE_TAG OPENCLAW_CONFIG_DIGEST OPENCLAW_GATEWAY_TOKEN
 export SLACK_BOT_TOKEN SLACK_APP_TOKEN SLACK_ALLOWED_USERS
-export SLACK_HOME_CHANNEL SLACK_HOME_CHANNEL_NAME
-export GOOGLE_CLIENT_SECRET_B64 GOOGLE_TOKEN_B64
-export COMPOSIO_API_KEY
-envsubst '$ACR_LOGIN_SERVER $ACR_PULL_ID $CONTAINERAPP_ENV_ID $HERMES_IMAGE_TAG $HERMES_MODEL $HERMES_TAIL_FILE_LOGS $HERMES_CONFIG_DIGEST $AZURE_FOUNDRY_API_KEY $AZURE_FOUNDRY_BASE_URL $SLACK_BOT_TOKEN $SLACK_APP_TOKEN $SLACK_ALLOWED_USERS $SLACK_HOME_CHANNEL $SLACK_HOME_CHANNEL_NAME $GOOGLE_CLIENT_SECRET_B64 $GOOGLE_TOKEN_B64 $COMPOSIO_API_KEY' \
+
+envsubst '$ACR_LOGIN_SERVER $ACR_PULL_ID $CONTAINERAPP_ENV_ID $OPENCLAW_IMAGE_TAG $OPENCLAW_CONFIG_DIGEST $OPENCLAW_GATEWAY_TOKEN $SLACK_BOT_TOKEN $SLACK_APP_TOKEN $SLACK_ALLOWED_USERS' \
   < "$repo_root/azure/containerapp.yaml.tpl" > "$tmp_yaml"
 
 if az containerapp show --resource-group "$RESOURCE_GROUP" --name "$CONTAINERAPP_NAME" >/dev/null 2>&1; then
@@ -296,9 +225,9 @@ if [[ -n "$principal_id" && "$principal_id" != "null" ]]; then
   az containerapp update \
     --resource-group "$RESOURCE_GROUP" \
     --name "$CONTAINERAPP_NAME" \
-    --image "$ACR_LOGIN_SERVER/hermes-agent:$HERMES_IMAGE_TAG" \
+    --image "$ACR_LOGIN_SERVER/openclaw-agent:$OPENCLAW_IMAGE_TAG" \
     --output none
 fi
 
-echo "Azure deployment finished."
+echo "Azure OpenClaw deployment finished."
 echo "Logs: az containerapp logs show -g $RESOURCE_GROUP -n $CONTAINERAPP_NAME --follow"
