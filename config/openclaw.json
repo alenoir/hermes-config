@@ -56,6 +56,12 @@
         "U06JF46Q57F"
       ],
       "groupPolicy": "open",
+      "requireMention": false,
+      "channels": {
+        "*": {
+          "requireMention": false
+        }
+      },
       "allowBots": false,
       "historyLimit": 50,
       "dmHistoryLimit": 50,
