@@ -31,9 +31,7 @@ properties:
             mkdir -p /root/.openclaw /mnt/openclaw-state
             cp -a /mnt/openclaw-state/. /root/.openclaw/ 2>/dev/null || true
             mkdir -p /root/.openclaw/workspace
-            if [ ! -f /root/.openclaw/openclaw.json ]; then
-              cp /app/config/openclaw.json /root/.openclaw/openclaw.json
-            fi
+            cp /app/config/openclaw.json /root/.openclaw/openclaw.json
 
             sync_state() {
               while true; do

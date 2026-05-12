@@ -154,7 +154,7 @@ The default OpenClaw config uses:
 
 ```txt
 primary:   openai/gpt-5.5
-fallbacks: openai/gpt-5.4, openai/gpt-5.4-mini
+provider:  OpenAI Codex OAuth
 ```
 
 The Slack command `/think high` can raise effort for one session. The config also enables full local tool access inside the container for Antoine's Slack user.
