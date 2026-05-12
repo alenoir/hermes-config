@@ -18,7 +18,7 @@ Slack
   -> OpenAI Codex OAuth / ChatGPT Pro
 ```
 
-OpenClaw state lives under `/root/.openclaw` in the container and is mounted on Azure Files. That directory stores config, sessions, memory, workspace files, and OpenAI Codex OAuth profiles.
+OpenClaw runs from `/root/.openclaw` on local container storage. Azure Files is mounted separately and used as the persistence store copied into the runtime directory at startup and synced back periodically. This avoids Azure Files symlink issues with OpenClaw plugin skills while keeping OAuth profiles and state recoverable across restarts.
 
 The deployment intentionally keeps one replica:
 

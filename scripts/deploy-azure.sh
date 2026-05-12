@@ -29,7 +29,7 @@ OPENCLAW_UPLOAD_LOCAL_STATE="${OPENCLAW_UPLOAD_LOCAL_STATE:-false}"
 ACR_PULL_IDENTITY="${ACR_PULL_IDENTITY:-hermes-acr-pull}"
 
 if [[ -z "$OPENCLAW_GATEWAY_TOKEN" ]]; then
-  OPENCLAW_GATEWAY_TOKEN="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 48)"
+  OPENCLAW_GATEWAY_TOKEN="$(openssl rand -hex 32)"
 fi
 
 require ACR_NAME

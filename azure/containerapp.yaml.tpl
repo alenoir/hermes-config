@@ -28,11 +28,27 @@ properties:
           - -c
           - |
             set -e
+            mkdir -p /root/.openclaw /mnt/openclaw-state
+            cp -a /mnt/openclaw-state/. /root/.openclaw/ 2>/dev/null || true
             mkdir -p /root/.openclaw/workspace
             if [ ! -f /root/.openclaw/openclaw.json ]; then
               cp /app/config/openclaw.json /root/.openclaw/openclaw.json
             fi
-            exec openclaw gateway --port 18789 --verbose
+
+            sync_state() {
+              while true; do
+                sleep 60
+                cp -aL /root/.openclaw/. /mnt/openclaw-state/ 2>/dev/null || true
+              done
+            }
+
+            sync_state &
+            sync_pid="$!"
+            openclaw gateway --port 18789 --verbose &
+            gateway_pid="$!"
+
+            trap 'kill "$sync_pid" 2>/dev/null || true; cp -aL /root/.openclaw/. /mnt/openclaw-state/ 2>/dev/null || true; kill "$gateway_pid" 2>/dev/null || true' TERM INT EXIT
+            wait "$gateway_pid"
         env:
           - name: OPENCLAW_CONFIG_PATH
             value: /root/.openclaw/openclaw.json
@@ -65,9 +81,13 @@ properties:
             initialDelaySeconds: 15
             periodSeconds: 15
         volumeMounts:
-          - volumeName: openclaw-home
+          - volumeName: openclaw-runtime
             mountPath: /root/.openclaw
+          - volumeName: openclaw-home
+            mountPath: /mnt/openclaw-state
     volumes:
+      - name: openclaw-runtime
+        storageType: EmptyDir
       - name: openclaw-home
         storageType: AzureFile
         storageName: openclaw-home
