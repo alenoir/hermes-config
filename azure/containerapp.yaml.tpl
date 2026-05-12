@@ -30,6 +30,7 @@ properties:
             set -e
             mkdir -p /root/.openclaw /mnt/openclaw-state
             cp -a /mnt/openclaw-state/. /root/.openclaw/ 2>/dev/null || true
+            rm -rf /root/.openclaw/plugin-skills
             mkdir -p /root/.openclaw/workspace
             cp /app/config/openclaw.json /root/.openclaw/openclaw.json
 

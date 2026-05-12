@@ -101,7 +101,7 @@ Invite the bot to channels where it should answer:
 /invite @Dwight Schrute
 ```
 
-Channel messages are mention-gated by default. Threads continue through OpenClaw's Slack thread session handling.
+Channel messages are mention-gated by default. Replies are delivered visibly in Slack threads, and thread sessions continue through OpenClaw's Slack thread handling.
 
 Useful OpenClaw chat commands:
 

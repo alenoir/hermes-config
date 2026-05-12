@@ -135,6 +135,10 @@
     }
   },
   "messages": {
+    "visibleReplies": "automatic",
+    "groupChat": {
+      "visibleReplies": "automatic"
+    },
     "responsePrefix": "",
     "ackReaction": "eyes",
     "ackReactionScope": "all",
