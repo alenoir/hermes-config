@@ -38,6 +38,7 @@ require FILE_SHARE
 require SLACK_BOT_TOKEN
 require SLACK_APP_TOKEN
 require SLACK_ALLOWED_USERS
+require COMPOSIO_API_KEY
 
 if ! command -v az >/dev/null 2>&1; then
   echo "Azure CLI is required." >&2
@@ -155,11 +156,18 @@ for old_path in config.yaml SOUL.md google_client_secret.json google_token.json;
     --output none 2>/dev/null || true
 done
 
+az storage directory create \
+  --account-name "$STORAGE_ACCOUNT" \
+  --account-key "$storage_key" \
+  --share-name "$FILE_SHARE" \
+  --name config \
+  --output none || true
+
 az storage file delete \
   --account-name "$STORAGE_ACCOUNT" \
   --account-key "$storage_key" \
   --share-name "$FILE_SHARE" \
-  --path openclaw.json \
+  --path config/openclaw.json \
   --output none 2>/dev/null || true
 
 az storage file upload \
@@ -167,7 +175,7 @@ az storage file upload \
   --account-key "$storage_key" \
   --share-name "$FILE_SHARE" \
   --source "$repo_root/config/openclaw.json" \
-  --path openclaw.json \
+  --path config/openclaw.json \
   --output none
 
 if [[ "$OPENCLAW_UPLOAD_LOCAL_STATE" == "true" && -d "$repo_root/data" ]]; then
@@ -201,9 +209,9 @@ tmp_yaml="$tmp_dir/containerapp.yaml"
 
 export ACR_LOGIN_SERVER ACR_PULL_ID CONTAINERAPP_ENV_ID
 export OPENCLAW_IMAGE_TAG OPENCLAW_CONFIG_DIGEST OPENCLAW_GATEWAY_TOKEN
-export SLACK_BOT_TOKEN SLACK_APP_TOKEN SLACK_ALLOWED_USERS
+export SLACK_BOT_TOKEN SLACK_APP_TOKEN SLACK_ALLOWED_USERS COMPOSIO_API_KEY
 
-envsubst '$ACR_LOGIN_SERVER $ACR_PULL_ID $CONTAINERAPP_ENV_ID $OPENCLAW_IMAGE_TAG $OPENCLAW_CONFIG_DIGEST $OPENCLAW_GATEWAY_TOKEN $SLACK_BOT_TOKEN $SLACK_APP_TOKEN $SLACK_ALLOWED_USERS' \
+envsubst '$ACR_LOGIN_SERVER $ACR_PULL_ID $CONTAINERAPP_ENV_ID $OPENCLAW_IMAGE_TAG $OPENCLAW_CONFIG_DIGEST $OPENCLAW_GATEWAY_TOKEN $SLACK_BOT_TOKEN $SLACK_APP_TOKEN $SLACK_ALLOWED_USERS $COMPOSIO_API_KEY' \
   < "$repo_root/azure/containerapp.yaml.tpl" > "$tmp_yaml"
 
 if az containerapp show --resource-group "$RESOURCE_GROUP" --name "$CONTAINERAPP_NAME" >/dev/null 2>&1; then

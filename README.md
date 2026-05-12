@@ -14,11 +14,12 @@ git checkout hermes-v0.1.0
 Slack
   -> Azure Container Apps
   -> OpenClaw Gateway
+  -> Composio Connect MCP
   -> Azure Files persistent OpenClaw state
   -> OpenAI Codex OAuth / ChatGPT Pro
 ```
 
-OpenClaw runs from `/root/.openclaw` on local container storage. Azure Files is mounted separately and used as the persistence store copied into the runtime directory at startup and synced back periodically. This avoids Azure Files symlink issues with OpenClaw plugin skills while keeping OAuth profiles and state recoverable across restarts.
+OpenClaw runs from `/root/.openclaw` on local container storage. Azure Files is mounted separately and used as the persistence store copied into the runtime directory at startup and synced back periodically. The deployed config is stored separately at `config/openclaw.json` on the Azure Files share so runtime state syncs cannot overwrite it. This avoids Azure Files symlink issues with OpenClaw plugin skills while keeping OAuth profiles and state recoverable across restarts.
 
 The deployment intentionally keeps one replica:
 
@@ -93,6 +94,7 @@ Required tokens:
 SLACK_BOT_TOKEN=xoxb-...
 SLACK_APP_TOKEN=xapp-...
 SLACK_ALLOWED_USERS=U06JF46Q57F
+COMPOSIO_API_KEY=...
 ```
 
 Invite the bot to channels where it should answer:
@@ -158,6 +160,16 @@ provider:  OpenAI Codex OAuth
 ```
 
 The Slack command `/think high` can raise effort for one session. The config also enables full local tool access inside the container for Antoine's Slack user.
+
+## Composio
+
+OpenClaw is configured with Composio Connect as an outbound MCP server:
+
+```txt
+https://connect.composio.dev/mcp
+```
+
+The MCP request uses `COMPOSIO_API_KEY` from Azure Container Apps secrets as the `x-api-key` header. Connected apps such as Gmail and Google Calendar are managed in the Composio dashboard.
 
 ## Notes
 

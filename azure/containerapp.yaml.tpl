@@ -16,6 +16,8 @@ properties:
         value: "$SLACK_APP_TOKEN"
       - name: openclaw-gateway-token
         value: "$OPENCLAW_GATEWAY_TOKEN"
+      - name: composio-api-key
+        value: "$COMPOSIO_API_KEY"
   template:
     scale:
       minReplicas: 1
@@ -32,7 +34,9 @@ properties:
             cp -a /mnt/openclaw-state/. /root/.openclaw/ 2>/dev/null || true
             rm -rf /root/.openclaw/plugin-skills
             mkdir -p /root/.openclaw/workspace
-            if [ -f /mnt/openclaw-state/openclaw.json ]; then
+            if [ -f /mnt/openclaw-state/config/openclaw.json ]; then
+              cp /mnt/openclaw-state/config/openclaw.json /root/.openclaw/openclaw.json
+            elif [ -f /mnt/openclaw-state/openclaw.json ]; then
               cp /mnt/openclaw-state/openclaw.json /root/.openclaw/openclaw.json
             else
               cp /app/config/openclaw.json /root/.openclaw/openclaw.json
@@ -75,6 +79,8 @@ properties:
             secretRef: slack-app-token
           - name: SLACK_ALLOWED_USERS
             value: "$SLACK_ALLOWED_USERS"
+          - name: COMPOSIO_API_KEY
+            secretRef: composio-api-key
         resources:
           cpu: 4
           memory: 8Gi

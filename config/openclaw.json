@@ -15,6 +15,8 @@
       "embeddedHarness": {
         "runtime": "auto"
       },
+      "typingMode": "instant",
+      "typingIntervalSeconds": 4,
       "thinkingDefault": "low",
       "verboseDefault": "off",
       "elevatedDefault": "on",
@@ -146,6 +148,20 @@
       "slack": [
         "U06JF46Q57F"
       ]
+    }
+  },
+  "mcp": {
+    "servers": {
+      "composio": {
+        "url": "https://connect.composio.dev/mcp",
+        "transport": "streamable-http",
+        "connectionTimeoutMs": 30000,
+        "headers": {
+          "x-api-key": "${COMPOSIO_API_KEY}",
+          "x-consumer-api-key": "${COMPOSIO_API_KEY}",
+          "Authorization": "Bearer ${COMPOSIO_API_KEY}"
+        }
+      }
     }
   },
   "messages": {
