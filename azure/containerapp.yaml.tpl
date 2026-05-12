@@ -32,7 +32,11 @@ properties:
             cp -a /mnt/openclaw-state/. /root/.openclaw/ 2>/dev/null || true
             rm -rf /root/.openclaw/plugin-skills
             mkdir -p /root/.openclaw/workspace
-            cp /app/config/openclaw.json /root/.openclaw/openclaw.json
+            if [ -f /mnt/openclaw-state/openclaw.json ]; then
+              cp /mnt/openclaw-state/openclaw.json /root/.openclaw/openclaw.json
+            else
+              cp /app/config/openclaw.json /root/.openclaw/openclaw.json
+            fi
 
             sync_state() {
               while true; do
