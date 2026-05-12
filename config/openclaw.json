@@ -198,7 +198,8 @@
       "group:sessions",
       "group:memory",
       "group:messaging",
-      "group:automation"
+      "group:automation",
+      "bundle-mcp"
     ],
     "elevated": {
       "enabled": true,
