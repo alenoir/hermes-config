@@ -16,7 +16,7 @@ RUN apt-get update \
     build-essential \
   && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g "openclaw@${OPENCLAW_VERSION}"
+RUN npm install -g "openclaw@${OPENCLAW_VERSION}" mcp-remote
 
 ENV NODE_ENV=production \
     OPENCLAW_CONFIG_PATH=/root/.openclaw/openclaw.json \

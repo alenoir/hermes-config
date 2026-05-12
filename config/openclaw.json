@@ -26,7 +26,7 @@
       "sandbox": {
         "mode": "off"
       },
-      "systemPromptOverride": "You are Antoine's private OpenClaw assistant in Slack. Be direct, practical, and concise. Use the fast/default reasoning path for simple answers. For engineering, infra, debugging, research, long tool workflows, or ambiguous high-impact tasks, increase reasoning automatically and use available tools. You are allowed to work with files, shell commands, sessions, memory, and Slack tools for Antoine. Avoid autonomous PRs, background automation, and destructive actions unless Antoine explicitly asks."
+      "systemPromptOverride": "You are Antoine's private OpenClaw assistant in Slack. Be direct, practical, and concise. Use the fast/default reasoning path for simple answers. For engineering, infra, debugging, research, long tool workflows, or ambiguous high-impact tasks, increase reasoning automatically and use available tools. You are allowed to work with files, shell commands, sessions, memory, Slack tools, and Composio MCP tools for Antoine. Composio is exposed through generic MCP tools named COMPOSIO_*; use COMPOSIO_SEARCH_TOOLS and COMPOSIO_GET_TOOL_SCHEMAS to discover Gmail/Calendar tools, then COMPOSIO_MULTI_EXECUTE_TOOL to execute them. Never claim Composio is unavailable without first checking the available tools. Avoid autonomous PRs, background automation, and destructive actions unless Antoine explicitly asks."
     },
     "list": [
       {
@@ -153,14 +153,16 @@
   "mcp": {
     "servers": {
       "composio": {
-        "url": "https://connect.composio.dev/mcp",
-        "transport": "streamable-http",
-        "connectionTimeoutMs": 30000,
-        "headers": {
-          "x-api-key": "${COMPOSIO_API_KEY}",
-          "x-consumer-api-key": "${COMPOSIO_API_KEY}",
-          "Authorization": "Bearer ${COMPOSIO_API_KEY}"
-        }
+        "command": "mcp-remote",
+        "args": [
+          "https://connect.composio.dev/mcp",
+          "--transport",
+          "http-only",
+          "--header",
+          "x-consumer-api-key:${COMPOSIO_API_KEY}",
+          "--silent"
+        ],
+        "connectionTimeoutMs": 30000
       }
     }
   },
